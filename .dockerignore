@@ -1,0 +1,17 @@
+# Git
+.git
+.gitignore
+
+# Node dependencies (we only need the build output)
+**/node_modules/
+
+# Rust build artifacts (built inside Docker)
+**/target/
+
+# Editor / OS junk
+.DS_Store
+*.swp
+*.log
+
+# Python caches
+**/__pycache__/

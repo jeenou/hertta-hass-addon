@@ -1,0 +1,28 @@
+name: "Hertta Add-on"
+version: "0.9.10"
+slug: "hertta_addon"
+description: "Hertta home energy system optimizer - HASS add-on"
+
+arch:
+  - aarch64
+  - armv7
+  - armhf
+  - amd64
+  - i386
+
+startup: services
+boot: auto
+init: false
+
+ingress: true
+ingress_port: 4001
+panel_icon: "mdi:chart-line"
+panel_title: "Hertta"
+
+homeassistant_api: true
+
+options:
+  log_level: info
+
+schema:
+  log_level: list(off|fatal|error|warning|info|debug|trace)
