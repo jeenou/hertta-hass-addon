@@ -1,0 +1,12 @@
+[submodule "hertta"]
+	path = hertta
+	url = https://github.com/predicer-tools/hertta.git
+	branch = main
+[submodule "hertta-frontend"]
+	path = hertta-frontend
+	url = https://github.com/predicer-tools/hertta-frontend.git
+	branch = master
+[submodule "hass-backend"]
+	path = hass-backend
+	url = https://github.com/jeenou/hass-backend.git
+	branch = main
