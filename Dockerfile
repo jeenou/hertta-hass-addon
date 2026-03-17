@@ -20,13 +20,30 @@
     # Copy both Rust projects
     COPY hertta/ hertta/
     COPY hass-backend/ hass-backend/
+    COPY hertta/Predicer/ ./Predicer/
     
     # Build both packages
     RUN cargo build --release -p hertta -p hass-backend
     
     
     # --------------------------
-    # 2) Runtime image for local testing
+    # 2) Build frontend
+    # --------------------------
+    FROM node:20-alpine AS frontend_builder
+    
+    WORKDIR /frontend
+    
+    # Install dependencies first for better caching
+    COPY hertta-frontend/package*.json ./
+    RUN npm ci
+    
+    # Copy frontend source and build
+    COPY hertta-frontend/ ./
+    RUN npm run build
+    
+    
+    # --------------------------
+    # 3) Runtime image for local testing
     # --------------------------
     FROM debian:bookworm-slim
     
@@ -56,11 +73,12 @@
     COPY --from=rust_builder /build/target/release/hertta /usr/local/bin/hertta
     COPY --from=rust_builder /build/target/release/hass-backend /usr/local/bin/hass-backend
     
-    # Runtime files hertta may need
+    # Runtime files
     COPY hertta/ ./hertta/
-    
-    # Runtime files hass-backend may need
     COPY hass-backend/ ./hass-backend/
+    
+    # Built frontend
+    COPY --from=frontend_builder /frontend/build/ /web/
     
     # Optional Python deps
     RUN if [ -f ./hertta/requirements.txt ]; then \
@@ -68,8 +86,8 @@
         fi
     
     # Install Julia deps for Predicer
-    RUN if [ -f ./hertta/Predicer/Project.toml ]; then \
-          julia --project=./hertta/Predicer -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'; \
+    RUN if [ -f ./Predicer/Project.toml ]; then \
+        julia --project=./Predicer -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'; \
         fi
     
     COPY run-local.sh /run.sh
