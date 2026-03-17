@@ -1,5 +1,5 @@
 # --------------------------
-# 1) Build hertta (Rust)
+# 1) Build Rust binaries
 # --------------------------
     FROM rust:1.85 AS rust_builder
 
@@ -17,11 +17,12 @@
     # Root workspace manifest
     COPY Cargo.toml ./
     
-    # Copy the whole hertta project so path deps like hertta_derive are available
+    # Copy both Rust projects
     COPY hertta/ hertta/
+    COPY hass-backend/ hass-backend/
     
-    # Build only the hertta package
-    RUN cargo build --release -p hertta
+    # Build both packages
+    RUN cargo build --release -p hertta -p hass-backend
     
     
     # --------------------------
@@ -42,7 +43,7 @@
         libzmq5 \
         && rm -rf /var/lib/apt/lists/*
     
-    # Install Julia matching your Manifest as closely as practical
+    # Install Julia matching Predicer manifest
     ARG JULIA_VERSION=1.10.3
     RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-${JULIA_VERSION}-linux-x86_64.tar.gz \
         && tar -xzf julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C /opt \
@@ -51,13 +52,17 @@
     
     WORKDIR /usr/src/app
     
-    # Rust binary
+    # Rust binaries
     COPY --from=rust_builder /build/target/release/hertta /usr/local/bin/hertta
+    COPY --from=rust_builder /build/target/release/hass-backend /usr/local/bin/hass-backend
     
     # Runtime files hertta may need
     COPY hertta/ ./hertta/
     
-    # Optional Python deps if you actually use them
+    # Runtime files hass-backend may need
+    COPY hass-backend/ ./hass-backend/
+    
+    # Optional Python deps
     RUN if [ -f ./hertta/requirements.txt ]; then \
           pip3 install --break-system-packages --no-cache-dir -r ./hertta/requirements.txt; \
         fi
@@ -70,6 +75,6 @@
     COPY run-local.sh /run.sh
     RUN chmod +x /run.sh
     
-    EXPOSE 3030
+    EXPOSE 3030 4001
     
     CMD ["/run.sh"]

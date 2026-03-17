@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "hertta"
+    "hertta",
+    "hass-backend"
 ]
 
 resolver = "2"
