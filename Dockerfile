@@ -1,73 +1,75 @@
 # --------------------------
-# 1) Build Rust binaries
+# 1) Build hertta (Rust)
 # --------------------------
-    ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
+    FROM rust:1.85 AS rust_builder
 
-    FROM rust:1.76-alpine AS rust_builder
-
-RUN apk add --no-cache \
-    build-base \
-    musl-dev \
-    pkgconfig \
-    openssl-dev \
-    git
-
-WORKDIR /build
-
-# Copy the whole repo (you have a .dockerignore now, so this is fine)
-COPY . .
-
-# Build only the binaries you need (workspace packages)
-RUN cargo build --release -p hass-backend -p hertta
-
-# ------------------------------------------------
-# 2) Build frontend (CRA)
-# ------------------------------------------------
-FROM node:20-alpine AS frontend_builder
-
-WORKDIR /frontend
-
-# Install deps first (better caching)
-COPY hertta-frontend/package*.json ./
-RUN npm ci
-
-# Copy frontend sources and build
-COPY hertta-frontend/ ./
-RUN npm run build
-# Output: /frontend/build
-
-# --------------------------
-# 2) Final Home Assistant image
-# --------------------------
-
-FROM $BUILD_FROM
-
-USER root
-
-RUN apk add --no-cache \
-    ca-certificates \
-    python3 \
-    py3-pip \
-    bash \
-    tzdata
-
-WORKDIR /usr/src/app
-
-# Rust binaries from builder stage
-COPY --from=rust_builder /build/target/release/hass-backend /usr/local/bin/hass-backend
-COPY --from=rust_builder /build/target/release/hertta /usr/local/bin/hertta
-
-# Optional python folder (you already had this)
-COPY hertta ./hertta
-RUN if [ -f ./hertta/requirements.txt ]; then \
-      pip3 install --no-cache-dir -r ./hertta/requirements.txt; \
-    fi
-
-# Frontend build → /web
-COPY --from=frontend_builder /frontend/build/ /web/
-
-COPY run.sh /run.sh
-RUN chmod a+x /run.sh
-
-EXPOSE 4001
-CMD ["/run.sh"]
+    RUN apt-get update && apt-get install -y \
+        build-essential \
+        pkg-config \
+        libssl-dev \
+        libzmq3-dev \
+        git \
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
+    
+    WORKDIR /build
+    
+    # Root workspace manifest
+    COPY Cargo.toml ./
+    
+    # Copy the whole hertta project so path deps like hertta_derive are available
+    COPY hertta/ hertta/
+    
+    # Build only the hertta package
+    RUN cargo build --release -p hertta
+    
+    
+    # --------------------------
+    # 2) Runtime image for local testing
+    # --------------------------
+    FROM debian:bookworm-slim
+    
+    RUN apt-get update && apt-get install -y \
+        bash \
+        ca-certificates \
+        curl \
+        wget \
+        xz-utils \
+        python3 \
+        python3-pip \
+        tzdata \
+        libssl3 \
+        libzmq5 \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Install Julia matching your Manifest as closely as practical
+    ARG JULIA_VERSION=1.10.3
+    RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-${JULIA_VERSION}-linux-x86_64.tar.gz \
+        && tar -xzf julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C /opt \
+        && ln -s /opt/julia-${JULIA_VERSION}/bin/julia /usr/local/bin/julia \
+        && rm julia-${JULIA_VERSION}-linux-x86_64.tar.gz
+    
+    WORKDIR /usr/src/app
+    
+    # Rust binary
+    COPY --from=rust_builder /build/target/release/hertta /usr/local/bin/hertta
+    
+    # Runtime files hertta may need
+    COPY hertta/ ./hertta/
+    
+    # Optional Python deps if you actually use them
+    RUN if [ -f ./hertta/requirements.txt ]; then \
+          pip3 install --break-system-packages --no-cache-dir -r ./hertta/requirements.txt; \
+        fi
+    
+    # Install Julia deps for Predicer
+    RUN if [ -f ./hertta/Predicer/Project.toml ]; then \
+          julia --project=./hertta/Predicer -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'; \
+        fi
+    
+    COPY run-local.sh /run.sh
+    RUN chmod +x /run.sh
+    
+    EXPOSE 3030
+    
+    CMD ["/run.sh"]

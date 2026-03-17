@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "hertta"
+]
+
+resolver = "2"
