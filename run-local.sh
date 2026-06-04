@@ -2,17 +2,21 @@
 set -euo pipefail
 
 export RUST_LOG="${RUST_LOG:-info}"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/data/config}"
 export HERTTA_GRAPHQL_URL="${HERTTA_GRAPHQL_URL:-http://localhost:3030/graphql}"
-export HASS_BASE_URL="${HASS_BASE_URL:-http://localhost:8123/api}"
+export HASS_BASE_URL="${HASS_BASE_URL:-http://host.docker.internal:8123/api}"
 export HASS_TOKEN="${HASS_TOKEN:-dummy-token}"
 
 echo "Starting services..."
 echo "RUST_LOG=$RUST_LOG"
+echo "XDG_CONFIG_HOME=$XDG_CONFIG_HOME"
 echo "HERTTA_GRAPHQL_URL=$HERTTA_GRAPHQL_URL"
 echo "HASS_BASE_URL=$HASS_BASE_URL"
 echo "Julia: $(julia --version)"
+echo "UI/API will be available on http://localhost:4001"
 
 cd /usr/src/app
+mkdir -p "$XDG_CONFIG_HOME"
 
 /usr/local/bin/hertta &
 HERTTA_PID=$!
