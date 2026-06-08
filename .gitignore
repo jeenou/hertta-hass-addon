@@ -1,0 +1,47 @@
+# Rust build output
+/target/
+**/target/
+
+# Node dependencies and build output
+**/node_modules/
+**/dist/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Docker/local runtime data
+/data/
+/config/
+*.pid
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python cache and virtual environments
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig

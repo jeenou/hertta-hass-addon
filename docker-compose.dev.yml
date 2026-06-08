@@ -1,0 +1,79 @@
+services:
+  hertta:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      DEV_SERVICE: hertta
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "3030:3030"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3030/health"]
+      start_period: 15m
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    volumes:
+      - .:/usr/src/app
+      - hertta-dev-data:/data
+      - hertta-dev-cargo-registry:/usr/local/cargo/registry
+      - hertta-dev-cargo-git:/usr/local/cargo/git
+      - hertta-dev-target:/usr/src/app/target
+
+  hass-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      hertta:
+        condition: service_healthy
+    environment:
+      DEV_SERVICE: hass-backend
+      HERTTA_GRAPHQL_URL: http://hertta:3030/graphql
+      HASS_BASE_URL: ${HASS_BASE_URL:-http://host.docker.internal:8123/api}
+      HASS_TOKEN: ${HASS_TOKEN:-dummy-token}
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "4001:4001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4001/hertta-health"]
+      start_period: 10m
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    volumes:
+      - .:/usr/src/app
+      - hass-backend-dev-target:/usr/src/app/target
+      - hertta-dev-cargo-registry:/usr/local/cargo/registry
+      - hertta-dev-cargo-git:/usr/local/cargo/git
+
+  frontend:
+    image: node:20-bookworm
+    depends_on:
+      hass-backend:
+        condition: service_healthy
+    working_dir: /frontend
+    command: >
+      sh -c "if [ ! -f node_modules/.package-lock.json ]; then npm ci; fi;
+      npm run start-react"
+    environment:
+      REACT_APP_HERTTA_BACKEND_URL: http://hass-backend:4001
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      HOST: 0.0.0.0
+      PORT: "3000"
+      BROWSER: none
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./hertta-frontend:/frontend
+      - hertta-dev-frontend-node-modules:/frontend/node_modules
+
+volumes:
+  hertta-dev-data:
+  hertta-dev-cargo-registry:
+  hertta-dev-cargo-git:
+  hertta-dev-target:
+  hass-backend-dev-target:
+  hertta-dev-frontend-node-modules:
