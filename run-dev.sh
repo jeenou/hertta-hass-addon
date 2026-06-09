@@ -12,7 +12,14 @@ case "${DEV_SERVICE:-}" in
       touch /data/julia/.hertta-pkg-ready
     fi
 
-    exec cargo watch --poll -w hertta -w Cargo.toml -x "run -p hertta"
+    exec cargo watch --poll \
+      -w hertta/src \
+      -w hertta/hertta_derive \
+      -w hertta/Cargo.toml \
+      -w hertta/Cargo.lock \
+      -w Cargo.toml \
+      -w Cargo.lock \
+      -x "run -p hertta"
     ;;
 
   hass-backend)
