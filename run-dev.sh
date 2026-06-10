@@ -6,10 +6,14 @@ mkdir -p "${XDG_CONFIG_HOME:-/data/config}"
 
 case "${DEV_SERVICE:-}" in
   hertta)
-    if [ -f hertta/Predicer/Project.toml ] && [ ! -f /data/julia/.hertta-pkg-ready ]; then
-      echo "Installing Julia dependencies..."
-      julia --project=./hertta/Predicer -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
-      touch /data/julia/.hertta-pkg-ready
+    if [ -f hertta/predicer_wrapper/Project.toml ]; then
+      julia_env_hash="$(sha256sum hertta/predicer_wrapper/Project.toml hertta/Predicer/Project.toml | sha256sum | cut -d ' ' -f1)"
+      julia_env_marker="/data/julia/.predicer-runner-project-hash"
+      if [ ! -f "${julia_env_marker}" ] || [ "$(cat "${julia_env_marker}")" != "${julia_env_hash}" ]; then
+        echo "Preparing Julia Predicer runner environment..."
+        julia --project=./hertta/predicer_wrapper -e 'using Pkg; Pkg.develop(path="./hertta/Predicer"); Pkg.instantiate(); Pkg.precompile()'
+        echo "${julia_env_hash}" > "${julia_env_marker}"
+      fi
     fi
 
     exec cargo watch --poll \

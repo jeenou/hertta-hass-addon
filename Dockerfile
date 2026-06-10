@@ -74,7 +74,7 @@ RUN pip3 install --break-system-packages --no-cache-dir \
     numpy \
     pandas
 
-RUN julia --project=./hertta/Predicer -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+RUN julia --project=./hertta/predicer_wrapper -e 'using Pkg; Pkg.develop(path="./hertta/Predicer"); Pkg.instantiate(); Pkg.precompile()'
 
 ENV XDG_CONFIG_HOME=/data/config \
     HERTTA_GRAPHQL_URL=http://localhost:3030/graphql \
@@ -82,6 +82,7 @@ ENV XDG_CONFIG_HOME=/data/config \
     julia_exec=/usr/local/bin/julia \
     python_exec=/usr/bin/python3 \
     predicer_project=/usr/src/app/hertta/Predicer \
+    predicer_runner_project=/usr/src/app/hertta/predicer_wrapper \
     predicer_runner_script=/usr/src/app/hertta/predicer_wrapper/Pr_ArrowConnection.jl \
     weather_fetcher_script=/usr/src/app/hertta/forecasts/weather_forecast.py \
     price_fetcher_script=/usr/src/app/hertta/forecasts/entsoe_forecast.py
