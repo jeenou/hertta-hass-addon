@@ -17,6 +17,9 @@
 /config/
 *.pid
 
+# Predicer optimization results
+**/all_results_*.xlsx
+
 # Logs
 logs/
 *.log
