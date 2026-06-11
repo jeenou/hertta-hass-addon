@@ -1,4 +1,19 @@
-Hertta add-on for Home Assistant
+# Hertta add-on for Home Assistant
+
+## Install in Home Assistant
+
+The downloadable add-on image is currently available for `amd64` Home Assistant
+systems.
+
+1. Publish the image by running the `Publish Home Assistant add-on` GitHub
+   Actions workflow.
+2. In Home Assistant, open **Settings > Add-ons > Add-on store**.
+3. Open **Repositories** and add:
+   `https://github.com/jeenou/hertta-hass-addon`
+4. Install and start **Hertta**.
+
+Home Assistant supplies the Core API token automatically. Hertta stores its
+settings and model under the persistent add-on `/data` directory.
 
 ## Local Docker test
 
@@ -15,6 +30,8 @@ docker run --rm -it \
   --name hertta-addon-local \
   -p 4001:4001 \
   -v hertta-addon-data:/data \
+  -e HASS_BASE_URL=http://host.docker.internal:8123/api \
+  -e HASS_TOKEN=your_home_assistant_token \
   hertta-addon-local
 ```
 
@@ -25,10 +42,9 @@ The container starts both services:
 - `hertta` GraphQL backend inside the container on `localhost:3030`
 - `hass-backend` plus the built frontend on `http://localhost:4001`
 
-By default, the local container uses:
-
-- `HASS_BASE_URL=http://host.docker.internal:8123/api`
-- `HASS_TOKEN=dummy-token`
+For local testing, supply both the Home Assistant API URL and a long-lived
+access token. Inside Home Assistant, the add-on automatically uses the
+Supervisor API URL and token instead.
 
 To test against a real Home Assistant instance running on your host, pass a long-lived access token:
 

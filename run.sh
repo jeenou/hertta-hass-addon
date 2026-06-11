@@ -1,47 +1,45 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/bash
 set -euo pipefail
 
-LOG_LEVEL=$(bashio::config 'log_level')
-bashio::log.info "Starting Hertta add-on (log level: ${LOG_LEVEL})"
+OPTIONS_FILE=/data/options.json
+LOG_LEVEL="${RUST_LOG:-info}"
+if [[ -f "${OPTIONS_FILE}" ]]; then
+  LOG_LEVEL="$(jq -r '.log_level // "info"' "${OPTIONS_FILE}")"
+fi
 
 export RUST_LOG="${LOG_LEVEL}"
-
-# Home Assistant Core API base inside an add-on container
-export HASS_BASE_URL="http://supervisor/core/api"
-
-# Supervisor injects this token when homeassistant_api: true
-export HASS_TOKEN="${SUPERVISOR_TOKEN}"
-
-# Internal URL between processes in the same container
+export HASS_BASE_URL="${HASS_BASE_URL:-http://supervisor/core/api}"
+if [[ -z "${HASS_TOKEN:-}" ]]; then
+  export HASS_TOKEN="${SUPERVISOR_TOKEN:?Set HASS_TOKEN locally or enable homeassistant_api for the add-on}"
+fi
 export HERTTA_GRAPHQL_URL="http://localhost:3030/graphql"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/data/config}"
 
-bashio::log.info "Starting Hertta GraphQL backend on 0.0.0.0:3030..."
+echo "[Hertta] Starting add-on (log level: ${LOG_LEVEL})"
+echo "[Hertta] Starting GraphQL backend on 0.0.0.0:3030"
 hertta &
 HERTTA_PID=$!
 
-bashio::log.info "Starting Hass backend on 0.0.0.0:4001..."
+echo "[Hertta] Starting Home Assistant backend and UI on 0.0.0.0:4001"
 hass-backend &
 HASS_PID=$!
 
 PIDS=("${HERTTA_PID}" "${HASS_PID}")
 
 term_handler() {
-  bashio::log.info "Stopping Hertta add-on processes..."
+  echo "[Hertta] Stopping add-on processes"
 
-  # Graceful stop
   for pid in "${PIDS[@]}"; do
     if kill -0 "${pid}" 2>/dev/null; then
       kill -TERM "${pid}" 2>/dev/null || true
     fi
   done
 
-  # Give them a moment to exit
   sleep 3
 
-  # Hard kill if still running
   for pid in "${PIDS[@]}"; do
     if kill -0 "${pid}" 2>/dev/null; then
-      bashio::log.warning "Process ${pid} did not exit; killing..."
+      echo "[Hertta] Process ${pid} did not exit; killing"
       kill -KILL "${pid}" 2>/dev/null || true
     fi
   done
@@ -50,7 +48,7 @@ term_handler() {
 trap term_handler SIGTERM SIGINT
 
 wait -n || true
-bashio::log.warning "One of the processes exited; shutting down..."
+echo "[Hertta] One of the processes exited; shutting down"
 term_handler
 wait || true
-bashio::log.info "Hertta add-on stopped."
+echo "[Hertta] Add-on stopped"

@@ -1,3 +1,5 @@
+ARG BUILD_FROM=debian:bookworm-slim
+
 # --------------------------
 # 1) Build Rust binaries
 # --------------------------
@@ -36,14 +38,15 @@ RUN npm run build
 
 
 # --------------------------
-# 3) Runtime image for local Docker testing
+# 3) Runtime image for Home Assistant and local Docker testing
 # --------------------------
-FROM debian:bookworm-slim
+FROM ${BUILD_FROM}
 
 RUN apt-get update && apt-get install -y \
     bash \
     ca-certificates \
     curl \
+    jq \
     libssl3 \
     libzmq5 \
     python3 \
@@ -78,7 +81,7 @@ RUN julia --project=./hertta/predicer_wrapper -e 'using Pkg; Pkg.develop(path=".
 
 ENV XDG_CONFIG_HOME=/data/config \
     HERTTA_GRAPHQL_URL=http://localhost:3030/graphql \
-    HASS_BASE_URL=http://host.docker.internal:8123/api \
+    HASS_BASE_URL=http://supervisor/core/api \
     julia_exec=/usr/local/bin/julia \
     python_exec=/usr/bin/python3 \
     predicer_project=/usr/src/app/hertta/Predicer \
@@ -87,7 +90,7 @@ ENV XDG_CONFIG_HOME=/data/config \
     weather_fetcher_script=/usr/src/app/hertta/forecasts/weather_forecast.py \
     price_fetcher_script=/usr/src/app/hertta/forecasts/entsoe_forecast.py
 
-COPY run-local.sh /run.sh
+COPY run.sh /run.sh
 RUN chmod +x /run.sh && mkdir -p /data/config
 
 VOLUME ["/data"]
