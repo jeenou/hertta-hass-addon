@@ -1,11 +1,12 @@
 name: "Hertta"
-version: "0.10.0"
+version: "0.10.1"
 slug: "hertta_addon"
 description: "Home energy optimization with Hertta and Predicer"
 url: "https://github.com/jeenou/hertta-hass-addon"
 image: "ghcr.io/jeenou/{arch}-hertta-addon"
 
 arch:
+  - aarch64
   - amd64
 
 startup: services

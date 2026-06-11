@@ -2,8 +2,8 @@
 
 ## Install in Home Assistant
 
-The downloadable add-on image is currently available for `amd64` Home Assistant
-systems.
+The downloadable add-on image is available for `amd64` and `aarch64` Home
+Assistant systems, including 64-bit Raspberry Pi 4 installations.
 
 1. Publish the image by running the `Publish Home Assistant add-on` GitHub
    Actions workflow.

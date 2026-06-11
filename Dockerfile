@@ -57,10 +57,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ARG JULIA_VERSION=1.10.3
-RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-${JULIA_VERSION}-linux-x86_64.tar.gz \
-    && tar -xzf julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C /opt \
+ARG TARGETARCH
+RUN case "${TARGETARCH}" in \
+        amd64) JULIA_ARCH_DIR=x64; JULIA_ARCH=x86_64 ;; \
+        arm64) JULIA_ARCH_DIR=aarch64; JULIA_ARCH=aarch64 ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}"; exit 1 ;; \
+    esac \
+    && JULIA_TARBALL="julia-${JULIA_VERSION}-linux-${JULIA_ARCH}.tar.gz" \
+    && wget -q "https://julialang-s3.julialang.org/bin/linux/${JULIA_ARCH_DIR}/1.10/${JULIA_TARBALL}" \
+    && tar -xzf "${JULIA_TARBALL}" -C /opt \
     && ln -s /opt/julia-${JULIA_VERSION}/bin/julia /usr/local/bin/julia \
-    && rm julia-${JULIA_VERSION}-linux-x86_64.tar.gz
+    && rm "${JULIA_TARBALL}"
 
 WORKDIR /usr/src/app
 
