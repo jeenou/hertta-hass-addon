@@ -71,6 +71,10 @@ RUN case "${TARGETARCH}" in \
 
 WORKDIR /usr/src/app
 
+# Images are built under emulation for aarch64. Portable Julia package images
+# avoid recompiling them for the Raspberry Pi CPU when the add-on first runs.
+ENV JULIA_CPU_TARGET=generic
+
 COPY --from=rust_builder /build/target/release/hertta /usr/local/bin/hertta
 COPY --from=rust_builder /build/target/release/hass-backend /usr/local/bin/hass-backend
 
@@ -84,7 +88,8 @@ RUN pip3 install --break-system-packages --no-cache-dir \
     numpy \
     pandas
 
-RUN julia --project=./hertta/predicer_wrapper -e 'using Pkg; Pkg.develop(path="./hertta/Predicer"); Pkg.instantiate(); Pkg.precompile()'
+RUN julia --project=./hertta/predicer_wrapper -e 'using Pkg; Pkg.develop(path="./hertta/Predicer"); Pkg.instantiate(); Pkg.precompile()' \
+    && julia --project=./hertta/predicer_wrapper -e 'using Arrow, DataFrames, ZMQ, OrderedCollections, TimeZones, Dates, Predicer'
 
 ENV XDG_CONFIG_HOME=/data/config \
     HERTTA_GRAPHQL_URL=http://localhost:3030/graphql \

@@ -60,5 +60,5 @@ jobs:
           build-args: |
             BUILD_FROM=debian:bookworm-slim
           tags: |
-            ghcr.io/jeenou/${{ matrix.arch }}-hertta-addon:0.10.2
+            ghcr.io/jeenou/${{ matrix.arch }}-hertta-addon:0.10.3
             ghcr.io/jeenou/${{ matrix.arch }}-hertta-addon:latest
