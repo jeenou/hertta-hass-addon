@@ -1,5 +1,5 @@
 name: "Hertta"
-version: "0.10.3"
+version: "0.10.4"
 slug: "hertta_addon"
 description: "Home energy optimization with Hertta and Predicer"
 url: "https://github.com/jeenou/hertta-hass-addon"
